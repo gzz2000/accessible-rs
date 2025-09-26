@@ -196,17 +196,17 @@ mod platform {
 
     #[cfg(target_os = "macos")]
     pub(super) fn probe_single(ptr: *const u8) -> Result<(), CheckError> {
-        use mach2::error::mach_error_string;
-        use mach2::kern_return::KERN_SUCCESS;
+        use mach2::kern_return::{kern_return_t, KERN_SUCCESS};
+        use mach2::mach_types::vm_task_entry_t;
         use mach2::traps::mach_task_self;
-        use mach2::vm::{mach_vm_address_t, mach_vm_read_overwrite, mach_vm_size_t};
-        use std::ffi::CStr;
+        use mach2::vm::mach_vm_read_overwrite;
+        use mach2::vm_types::{mach_vm_address_t, mach_vm_size_t};
         use std::io::{self, ErrorKind};
 
         let mut buffer = [0u8; PROBE_BYTES];
         let mut out_size: mach_vm_size_t = 0;
-        let task = unsafe { mach_task_self() };
-        let result = unsafe {
+        let task: vm_task_entry_t = unsafe { mach_task_self() };
+        let result: kern_return_t = unsafe {
             mach_vm_read_overwrite(
                 task,
                 ptr as mach_vm_address_t,
@@ -226,17 +226,9 @@ mod platform {
                 )))
             }
         } else {
-            let msg = unsafe {
-                let cstr = mach_error_string(result);
-                if cstr.is_null() {
-                    format!("mach error {result}")
-                } else {
-                    CStr::from_ptr(cstr).to_string_lossy().into_owned()
-                }
-            };
             Err(CheckError::Unreadable(io::Error::new(
                 ErrorKind::Other,
-                msg,
+                format!("mach error {result}"),
             )))
         }
     }
