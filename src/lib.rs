@@ -114,6 +114,9 @@ pub fn probe_readable_slice<T>(slice: &[T]) -> Result<(), CheckError> {
     probe_readable_range(slice.as_ptr(), slice.len())
 }
 
+#[cfg(feature = "cuda")]
+pub mod cuda;
+
 mod platform {
     use super::{CheckError, PROBE_BYTES};
 
